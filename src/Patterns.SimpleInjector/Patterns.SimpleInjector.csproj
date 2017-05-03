@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.6</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Patterns.SimpleInjector</AssemblyName>
+    <PackageId>Patterns.SimpleInjector</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Patterns\Patterns.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SimpleInjector" Version="3.3.2" />
+    <PackageReference Include="SimpleInjector.Extensions.LifetimeScoping" Version="3.3.2" />
+    <PackageReference Include="SimpleInjector.Extensions.ExecutionContextScoping" Version="3.3.2" />
+    <PackageReference Include="SimpleInjector.Packaging" Version="3.3.2" />
+  </ItemGroup>
+
+</Project>

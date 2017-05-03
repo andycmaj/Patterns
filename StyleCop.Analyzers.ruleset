@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Patterns" ToolsVersion="15.0">
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="AD0001" Action="None" />
+    
+    <Rule Id="SA1101" Action="Hidden" />
+    <Rule Id="SA1111" Action="Hidden" />
+    <Rule Id="SA1600" Action="Hidden" />
+    <Rule Id="SA1633" Action="Hidden" />
+    <Rule Id="SA1611" Action="Hidden" />
+    <Rule Id="SA1614" Action="Hidden" />
+    <Rule Id="SA1615" Action="Hidden" />
+    <Rule Id="SA1618" Action="Hidden" />
+    <Rule Id="SA1616" Action="Hidden" />
+  </Rules>
+</RuleSet>
