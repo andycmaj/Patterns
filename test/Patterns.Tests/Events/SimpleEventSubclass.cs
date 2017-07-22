@@ -1,4 +1,4 @@
-﻿namespace Iommands.Tests.Events
+﻿namespace Commands.Tests.Events
 {
     public class SimpleEventSubclass : SimpleEvent
     {
@@ -6,7 +6,7 @@
         {
         }
 
-        public SimpleEventSubclass(object source, int value) 
+        public SimpleEventSubclass(object source, int value)
             : base(source, value)
         {
         }

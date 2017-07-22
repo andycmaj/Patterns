@@ -1,5 +1,5 @@
-﻿using IPatternsEvents;
-using System;
+﻿using System;
+using Patterns.Events;
 
 namespace Commands.Tests.Events
 {

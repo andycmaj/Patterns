@@ -1,21 +1,22 @@
-﻿using Patterns.Tests.ExampleCommands;
-
+﻿using FakeItEasy;
+using Patterns.Tests.ExampleCommands;
 using Xunit;
 
-namespace Patterns.Tests {
-
-    public class FunctionIntegrationTest : AbstractCommandIntegrationTest {
-
+namespace Patterns.Tests.Commands
+{
+    public class FunctionIntegrationTest : AbstractCommandIntegrationTest
+    {
         private const int UserId = 1;
         private const string Password = "password";
 
         [Fact]
-        public void Can_Inject_FunctionHandler_Dependencies() {
-            MockUserService
-                .Setup(svc => svc.VerifyPassword(UserId, Password))
+        public void Can_Inject_FunctionHandler_Dependencies()
+        {
+            A.CallTo(() => MockUserService.VerifyPassword(UserId, Password))
                 .Returns(true);
 
-            var function = new AuthenticateUserFunction {
+            var function = new AuthenticateUserFunction
+            {
                 UserId = UserId,
                 Password = Password
             };
@@ -23,15 +24,12 @@ namespace Patterns.Tests {
             var result = CommandRouter.ExecuteFunction(function);
 
             Assert.True(result.IsAuthenticated);
-
-            MockUserService.VerifyAll();
         }
 
         [Fact]
         public async void Can_Inject_FunctionHandlerAsync_Dependencies()
         {
-            MockUserService
-                .Setup(svc => svc.VerifyPassword(UserId, Password))
+            A.CallTo(() => MockUserService.VerifyPassword(UserId, Password))
                 .Returns(true);
 
             var function = new AsyncAuthenticateUserFunction
@@ -43,11 +41,6 @@ namespace Patterns.Tests {
             var result = await CommandRouter.ExecuteFunctionAsync(function);
 
             Assert.True(result.IsAuthenticated);
-
-            MockUserService.VerifyAll();
         }
-
-
     }
-
 }

@@ -1,35 +1,34 @@
-﻿using Patterns.Tests.ExampleCommands;
+﻿using FakeItEasy;
+using Patterns.Tests.ExampleCommands;
 using Patterns.Tests.ExampleDependencies;
-
 using Xunit;
 
-namespace Patterns.Tests {
-
-    public class ActionIntegrationTest : AbstractCommandIntegrationTest {
-
+namespace Patterns.Tests.Commands
+{
+    public class ActionIntegrationTest : AbstractCommandIntegrationTest
+    {
         private const int UserId = 1;
 
         [Fact]
-        public void Can_Inject_ActionHandler_Dependencies() {
-            var user = new User {
+        public void Can_Inject_ActionHandler_Dependencies()
+        {
+            var user = new User
+            {
                 Id = UserId
             };
 
-            MockUserService
-                .Setup(svc => svc.GetUser(UserId))
+            A.CallTo(() => MockUserService.GetUser(UserId))
                 .Returns(user);
 
-            MockUserService
-                .Setup(svc => svc.ResetPassword(user))
-                .Verifiable();
-
-            var action = new ResetPasswordAction {
+            var action = new ResetPasswordAction
+            {
                 UserId = UserId
             };
 
             CommandRouter.ExecuteAction(action);
 
-            MockUserService.VerifyAll();
+            A.CallTo(() => MockUserService.ResetPassword(user))
+                .MustHaveHappened();
         }
 
         [Fact]
@@ -40,13 +39,9 @@ namespace Patterns.Tests {
                 Id = UserId
             };
 
-            MockUserService
-                .Setup(svc => svc.GetUser(UserId))
-                .Returns(user);
 
-            MockUserService
-                .Setup(svc => svc.ResetPassword(user))
-                .Verifiable();
+            A.CallTo(() => MockUserService.GetUser(UserId))
+                .Returns(user);
 
             var action = new AsyncResetPasswordAction
             {
@@ -55,7 +50,8 @@ namespace Patterns.Tests {
 
             await CommandRouter.ExecuteActionAsync(action);
 
-            MockUserService.VerifyAll();
+            A.CallTo(() => MockUserService.ResetPassword(user))
+                .MustHaveHappened();
         }
     }
 

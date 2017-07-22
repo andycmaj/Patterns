@@ -1,7 +1,7 @@
-﻿using IPatternsEvents;
-using Moq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Xunit;
+using Patterns.Events;
+using FakeItEasy;
 
 namespace Commands.Tests.Events
 {
@@ -38,10 +38,9 @@ namespace Commands.Tests.Events
                     new AnotherSimpleEventHandler()
                 };
 
-            var eventHandlerFactory =
-                Mock.Of<IEventHandlerFactory>(factory =>
-                    factory.GetHandlers<SimpleEvent>() == multipleHandlers
-                );
+            var eventHandlerFactory = A.Fake<IEventHandlerFactory>();
+            A.CallTo(() => eventHandlerFactory.GetHandlers<SimpleEvent>())
+                .Returns(multipleHandlers);
 
             eventBus.Register<SimpleEvent>(eventHandlerFactory);
 
