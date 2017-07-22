@@ -39,7 +39,6 @@ namespace Patterns.Tests.Commands
                 Id = UserId
             };
 
-
             A.CallTo(() => MockUserService.GetUser(UserId))
                 .Returns(user);
 
