@@ -1,27 +1,21 @@
-﻿using Moq;
-using Patterns.Tests.ExampleDependencies;
-using Ninject;
+﻿using Patterns.Tests.ExampleDependencies;
 using Patterns.Commands;
+using FakeItEasy;
 
-namespace Patterns.Tests
+namespace Patterns.Tests.Commands
 {
+    public abstract class AbstractCommandIntegrationTest
+    {
+        protected IUserService MockUserService { get; }
+        protected ICommandRouter CommandRouter { get; }
 
-    public abstract class AbstractCommandIntegrationTest {
+        protected AbstractCommandIntegrationTest()
+        {
+            MockUserService = A.Fake<IUserService>();
 
-        protected Mock<IUserService> MockUserService;
-        protected ICommandRouter CommandRouter;
+            var handlerFactory = new TestCommandHandlerFactory(MockUserService);
 
-        public AbstractCommandIntegrationTest() {
-            MockUserService = new Mock<IUserService>(MockBehavior.Strict);
-
-            var kernel =
-                new StandardKernel(
-                    new ExampleDependencyGraph(MockUserService.Object)
-                );
-
-            CommandRouter = kernel.Get<ICommandRouter>();
+            CommandRouter = new CommandRouter(handlerFactory);
         }
-
     }
-
 }

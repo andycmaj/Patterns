@@ -1,6 +1,6 @@
-﻿using IPatternsEvents;
-using Xunit;
+﻿using Xunit;
 using System;
+using Patterns.Events;
 
 namespace Commands.Tests.Events
 {
@@ -33,7 +33,7 @@ namespace Commands.Tests.Events
         {
             var totalData = 0;
 
-            var action = 
+            var action =
                 new Action<SimpleEvent>(eventData =>
                 {
                     totalData += eventData.Value;

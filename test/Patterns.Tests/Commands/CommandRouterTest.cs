@@ -2,22 +2,22 @@ using System;
 using Patterns.Commands;
 using Patterns.Tests.ExampleCommands;
 using Patterns.Tests.ExampleDependencies;
-using Moq;
 using Xunit;
 using System.Threading.Tasks;
+using FakeItEasy;
 
-namespace Patterns.Tests
+namespace Patterns.Tests.Commands
 {
     public class CommandRouterTest : AbstractCommandIntegrationTest
     {
         [Fact]
         public void Execute_Should_Preserve_Exception_StackTrace()
         {
-            MockUserService
-                .Setup(svc => svc.GetUser(It.IsAny<int>()))
+            A.CallTo(() => MockUserService.GetUser(A<int>.Ignored))
                 .Throws(new Exception("TestMessage"));
 
-            var action = new ResetPasswordAction {
+            var action = new ResetPasswordAction
+            {
                 UserId = 0
             };
 
@@ -37,8 +37,7 @@ namespace Patterns.Tests
         [Fact]
         public async Task ExecuteAsync_Should_Preserve_Exception_StackTrace()
         {
-            MockUserService
-                .Setup(svc => svc.GetUser(It.IsAny<int>()))
+            A.CallTo(() => MockUserService.GetUser(A<int>.Ignored))
                 .Throws(new Exception("TestMessage"));
 
             var action = new ResetPasswordAction
