@@ -12,6 +12,7 @@ TOOLS_DIR=$SCRIPT_DIR/.tools
 ADDINS_DIR=$TOOLS_DIR/addins
 MODULES_DIR=$TOOLS_DIR/modules
 NUGET_EXE=$TOOLS_DIR/nuget.exe
+NUGET_URL=https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
 CAKE_EXE=$TOOLS_DIR/Cake/Cake.exe
 PACKAGES_CONFIG=$TOOLS_DIR/packages.config
 PACKAGES_CONFIG_MD5=$TOOLS_DIR/packages.config.md5sum
@@ -30,9 +31,10 @@ fi
 SCRIPT="build.cake"
 TARGET="Default"
 CONFIGURATION="Release"
-VERBOSITY="verbose"
+VERBOSITY="diagnostic"
 DRYRUN=
 SHOW_VERSION=false
+ENVIRONMENT="Development"
 SCRIPT_ARGUMENTS=()
 
 # Parse arguments.
@@ -43,6 +45,7 @@ for i in "$@"; do
         -c|--configuration) CONFIGURATION="$2"; shift ;;
         -v|--verbosity) VERBOSITY="$2"; shift ;;
         -d|--dryrun) DRYRUN="-dryrun" ;;
+        -e|--environment) ENVIRONMENT="$2"; shift ;;
         --version) SHOW_VERSION=true ;;
         --) shift; SCRIPT_ARGUMENTS+=("$@"); break ;;
         *) SCRIPT_ARGUMENTS+=("$1") ;;
@@ -55,20 +58,14 @@ if [ ! -d "$TOOLS_DIR" ]; then
   mkdir "$TOOLS_DIR"
 fi
 
-# Make sure that packages.config exist.
-if [ ! -f "$TOOLS_DIR/packages.config" ]; then
-    echo "Downloading packages.config..."
-    curl -Lsfo "$TOOLS_DIR/packages.config" http://cakebuild.net/download/bootstrapper/packages
-    if [ $? -ne 0 ]; then
-        echo "An error occured while downloading packages.config."
-        exit 1
-    fi
-fi
+# Make sure that packages.config exists and is latest from repo
+echo "updating packages.config..."
+cp ./packages.config $PACKAGES_CONFIG
 
 # Download NuGet if it does not exist.
 if [ ! -f "$NUGET_EXE" ]; then
     echo "Downloading NuGet..."
-    curl -Lsfo "$NUGET_EXE" https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+    curl -Lsfo $NUGET_EXE $NUGET_URL
     if [ $? -ne 0 ]; then
         echo "An error occured while downloading nuget.exe."
         exit 1
@@ -127,5 +124,5 @@ fi
 if $SHOW_VERSION; then
     exec mono "$CAKE_EXE" -version
 else
-    exec mono "$CAKE_EXE" $SCRIPT -verbosity=$VERBOSITY -configuration=$CONFIGURATION -target=$TARGET $DRYRUN "${SCRIPT_ARGUMENTS[@]}"
+    exec mono "$CAKE_EXE" $SCRIPT -experimental --paths_tools=$TOOLS_DIR -verbosity=$VERBOSITY -environment=$ENVIRONMENT -configuration=$CONFIGURATION -target=$TARGET $DRYRUN "${SCRIPT_ARGUMENTS[@]}"
 fi

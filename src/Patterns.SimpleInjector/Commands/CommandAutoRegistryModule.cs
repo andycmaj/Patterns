@@ -1,34 +1,47 @@
 using SimpleInjector;
 using Patterns.Commands;
+using Microsoft.Extensions.DependencyModel;
+using System;
 
 namespace Patterns.SimpleInjector.Commands
 {
     public class CommandAutoRegistryModule : IModule
     {
         private readonly Lifestyle commandLifestyle;
-
+        private readonly DependencyContext dependencyContext;
         public CommandAutoRegistryModule() : this(Lifestyle.Transient) { }
 
-        public CommandAutoRegistryModule(Lifestyle commandLifestyle)
+        public CommandAutoRegistryModule(
+            Lifestyle commandLifestyle,
+            DependencyContext dependencyContext = null
+        )
         {
             this.commandLifestyle = commandLifestyle;
+            this.dependencyContext = dependencyContext ?? DependencyContext.Default;
         }
-        
+
         public void RegisterServices(Container container)
         {
-            void Register(CommandRegistrator.CommandHandlerRegistration registration)
-            {
-                if (registration.IsDecorator)
+            Action<CommandRegistrator.CommandHandlerRegistration> register =
+                registration =>
                 {
-                    container.RegisterDecorator(registration.Interface, registration.Implementation, commandLifestyle);
-                }
-                else
-                {
-                    container.Register(registration.Interface, registration.Implementation, commandLifestyle);
-                }
-            }
+                    if (registration.IsDecorator)
+                    {
+                        container.RegisterDecorator(
+                            registration.Interface,
+                            registration.Implementation,
+                            commandLifestyle);
+                    }
+                    else
+                    {
+                        container.Register(
+                            registration.Interface,
+                            registration.Implementation,
+                            commandLifestyle);
+                    }
+                };
 
-            var registrator = new CommandRegistrator(Register);
+            var registrator = new CommandRegistrator(register, this.dependencyContext);
 
             registrator.RegisterCommands();
 

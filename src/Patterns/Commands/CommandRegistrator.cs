@@ -10,18 +10,21 @@ namespace Patterns.Commands
     public class CommandRegistrator
     {
         private readonly Action<CommandHandlerRegistration> registerCommand;
+        private readonly DependencyContext dependencyContext;
 
-        public CommandRegistrator(Action<CommandHandlerRegistration> registerCommand)
+        public CommandRegistrator(Action<CommandHandlerRegistration> registerCommand, DependencyContext dependencyContext = null)
         {
             this.registerCommand = registerCommand;
+            this.dependencyContext = dependencyContext ?? DependencyContext.Default;
         }
 
         public void RegisterCommands()
         {
             // Bind all ICommand implementations to the generic ICommand<,> interface they implement.
             var registrations =
-                GetDefaultAssembliesToSearch().SelectMany(FindRegistrations);
+                GetDefaultAssembliesToSearch(this.dependencyContext).SelectMany(FindRegistrations);
 
+            Console.WriteLine("Command Registrations: {0}", registrations.Count());
             foreach (var registration in registrations)
             {
                 registerCommand(registration);
@@ -38,7 +41,7 @@ namespace Patterns.Commands
                 {
                     Interface = type.GetInterfaces().Single(IsCommandHandler),
                     Implementation = type,
-                    IsDecorator = type.GetTypeInfo().GetCustomAttribute<CommandDecorator>() != null,
+                    IsDecorator = type.GetTypeInfo().GetCustomAttribute<CommandDecorator>() != null
                 });
         }
 
@@ -48,28 +51,11 @@ namespace Patterns.Commands
                 && typeof(ICommandHandler) != interfaceType;
         }
 
-        private static IList<Assembly> GetDefaultAssembliesToSearch()
+        private IList<Assembly> GetDefaultAssembliesToSearch(DependencyContext dependencyContext)
         {
-            return DependencyContext.Default
+            return dependencyContext
                 .CompileLibraries
-                .Select(lib =>
-                {
-                    if (File.Exists(lib.Path))
-                    {
-                        // dotnet core platform assemblies are not actually deployed with app
-                        return null;
-                    }
-
-                    try
-                    {
-                        return Assembly.Load(new AssemblyName(lib.Name));
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        return null;
-                    }
-                })
-                .Where(CanLoad)
+                .GetLoadableAssemblies()
                 .ToList();
         }
 

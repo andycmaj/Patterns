@@ -8,17 +8,29 @@ var DefaultTarget = Argument("target", "Default");
 // Tasks
 //////////////////////////////////////////////////////////////////////
 
-Task("Default")
-    .IsDependentOn("Build")
-    .IsDependentOn("Test");
+Task("Restore")
+    .Does(() =>
+{
+    DotNetCoreRestore();
+});
 
-Task("BuildAndPublish")
-    .IsDependentOn("Pack")
-    .IsDependentOn("Publish");
-
+Task("Build")
+    .IsDependentOn("Restore")
+    .Does(() =>
+{
+    DotNetCoreBuild(".");
+});
 
 //////////////////////////////////////////////////////////////////////
 // EXECUTION
 //////////////////////////////////////////////////////////////////////
+
+Task("Default")
+    .IsDependentOn("Build");
+    // .IsDependentOn("Test");
+
+// Task("BuildAndPublish")
+//     .IsDependentOn("Pack")
+//     .IsDependentOn("Publish");
 
 RunTarget(DefaultTarget);
