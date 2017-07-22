@@ -6,10 +6,10 @@ namespace Patterns.Tests.Commands
 {
     public abstract class AbstractCommandIntegrationTest
     {
-        protected IUserService MockUserService;
-        protected ICommandRouter CommandRouter;
+        protected IUserService MockUserService { get; }
+        protected ICommandRouter CommandRouter { get; }
 
-        public AbstractCommandIntegrationTest()
+        protected AbstractCommandIntegrationTest()
         {
             MockUserService = A.Fake<IUserService>();
 

@@ -54,5 +54,4 @@ namespace Patterns.Tests.Commands
                 .MustHaveHappened();
         }
     }
-
 }
