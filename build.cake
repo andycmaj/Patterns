@@ -1,3 +1,7 @@
+#tool coveralls.io
+#tool OpenCover
+#addin Cake.Coveralls
+
 //////////////////////////////////////////////////////////////////////
 // ARGUMENT DEFAULTS
 //////////////////////////////////////////////////////////////////////
@@ -66,12 +70,27 @@ Task("Test")
     );
 });
 
+Task("MeasureCodeCoverage")
+    .WithCriteria(() => IsRunningOnWindows())
+    .IsDependentOn("Restore")
+    .Does(() => OpenCover(
+        _ => RunTarget("Test"),
+        OutputPath + "coverage.xml",
+        new OpenCoverSettings()
+            .WithFilter("+[Patterns]*")
+            .WithFilter("-[Patterns.Tests]*")
+    )
+);
+
 //////////////////////////////////////////////////////////////////////
 // EXECUTION
 //////////////////////////////////////////////////////////////////////
 
 Task("Default")
     .IsDependentOn("Test");
+
+Task("Coverage")
+    .IsDependentOn("MeasureCodeCoverage");
 
 // Task("BuildAndPublish")
 //     .IsDependentOn("Pack")
