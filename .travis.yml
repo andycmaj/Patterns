@@ -21,7 +21,7 @@ dotnet: 1.0.4
 
 before_script:
   - '[[ $TRAVIS_BRANCH == "master" && $TRAVIS_TAG =~ (^v[0-9]+.[0-9]+.[0-9]+) ]] && CONFIGURATION="Release" || CONFIGURATION="Debug"'
-  - echo "Configuration: ${CONFIGURATION}"
+  - echo Configuration: $CONFIGURATION
 
 script:
   - ./build.sh -t Default -c $CONFIGURATION --verbosity diagnostic
