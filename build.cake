@@ -23,7 +23,7 @@ var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml");
 
 public void ForEachProject(string globPattern, Action<DirectoryPath, FilePath> projectAction)
 {
-    var projectFiles = GetFiles($"{globPattern}/project.json").Union(GetFiles($"{globPattern}/*.csproj"));
+    var projectFiles = GetFiles($"{globPattern}/*.csproj");
     foreach (var projectFile in projectFiles)
     {
         var projectDir = projectFile.GetDirectory();
