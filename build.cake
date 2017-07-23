@@ -44,6 +44,11 @@ Func<FilePath, FilePath> MakeTestResultFile = (projectFile) =>
 // Tasks
 //////////////////////////////////////////////////////////////////////
 
+Setup(context =>
+{
+    Information($"Build configuration: {Configuration}");
+});
+
 Task("EnsureOutputPathExists")
     .Does(() => EnsureDirectoryExists(OutputPath));
 
