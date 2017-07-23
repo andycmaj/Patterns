@@ -20,7 +20,8 @@ mono:
 dotnet: 1.0.4
 
 script:
-  - ./build.sh --verbosity diagnostic
+  - ./build.sh -t Default -c Debug --verbosity diagnostic
+  - ./build.sh -t Publish -c Debug --verbosity diagnostic
 
 cache:
   directories:
