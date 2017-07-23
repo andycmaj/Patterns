@@ -15,7 +15,7 @@ var TestResultsPath =
 var XUnitArguments = Argument("xUnitArgs", "-parallel none -verbose -xml {0}");
 
 // TODO: update when we have multiple test projects
-var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml")
+var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml");
 
 //////////////////////////////////////////////////////////////////////
 // Helpers
