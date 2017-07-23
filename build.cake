@@ -14,6 +14,9 @@ var TestResultsPath =
         .MakeAbsolute(Context.Environment);
 var XUnitArguments = Argument("xUnitArgs", "-parallel none -verbose -xml {0}");
 
+// TODO: update when we have multiple test projects
+var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml")
+
 //////////////////////////////////////////////////////////////////////
 // Helpers
 //////////////////////////////////////////////////////////////////////
@@ -92,7 +95,7 @@ Task("MeasureCodeCoverage")
                 projectFile,
                 "xunit"
             ),
-            Directory(OutputPath) + File("coverage.xml"),
+            CoverageResultsPath,
             new OpenCoverSettings {
                 // Must use projectDir as working dir or else dotnet-xunit doesn't work when driven by OpenCover cli
                 WorkingDirectory = projectDir,
@@ -108,10 +111,10 @@ Task("MeasureCodeCoverage")
 );
 
 Task("UploadCodeCoverage")
-    .WithCriteria(() => IsRunningOnWindows())
+    .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
     .IsDependentOn("MeasureCodeCoverage")
     .Does(() => CoverallsIo(
-        Directory(OutputPath) + File("coverage.xml"),
+        CoverageResultsPath,
         new CoverallsIoSettings
         {
             RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
