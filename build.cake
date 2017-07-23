@@ -69,6 +69,7 @@ Task("Test")
 );
 
 // UberHack: must use debugType:full on Windows only when running code-coverage.
+// TODO: unhack when https://github.com/OpenCover/opencover/issues/601 is resolved
 Task("ShimProjectDebugTypesForOpenCover")
     .WithCriteria(() => IsRunningOnWindows())
     .Does(() => ForEachProject("./src/*", (projectDir, projectFile) =>
@@ -82,6 +83,7 @@ Task("ShimProjectDebugTypesForOpenCover")
 
 Task("MeasureCodeCoverage")
     .WithCriteria(() => IsRunningOnWindows())
+    .IsDependentOn("EnsureOutputPathExists")
     .IsDependentOn("ShimProjectDebugTypesForOpenCover")
     .IsDependentOn("Restore")
     .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
