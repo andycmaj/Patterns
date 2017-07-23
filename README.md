@@ -131,39 +131,11 @@ var result = commandRouter.ExecuteFunction(command);
 Assert.True(result.IsAuthenticated);
 ```
 
-#### Managing your Commands and Handlers using Ninject
-
-:point_right: Requires [ImsHealth.Patterns.Ninject](https://imshealth.myget.org/feed/internal/package/nuget/ImsHealth.Patterns.Ninject) nuget package
-
-The `CommandRouter` can be configured use **Ninject** to register Handlers for your Commands and inject the Handlers' dependencies. The `ICommandRouter` you get from the **Ninject** Kernel will resolve CommandHandlers and their dependencies using your **Ninject** bindings.
-See [ImsHealth.Patterns.Ninject's README](https://gitlab.imshealth.com/tools/ImsHealth.Patterns/blob/master/src/ImsHealth.Patterns.Ninject/README.md#ninject-providers) for more examples.
-
-```csharp
-// Bind all dependencies for all registered Handlers
-Bind<IUserService>().ToConstant(userService);
-
-// Register your CommandHandlers
-Bind<IActionHandler<ResetPasswordAction>>()
-    .To<ResetPasswordAction.Handler>();
-
-// Register NinjectCommandHandlerFactory as the ICommandHandlerFactory used by your CommandRouter
-Bind<ICommandHandlerFactory>()
-    .To<NinjectCommandHandlerFactory>()
-    .InSingletonScope();
-
-// Register your CommandRouter
-Bind<ICommandRouter>()
-    .To<CommandRouter>()
-    .InSingletonScope();
-```
-
 ## Domain Events
 
 Based on the classic [PubSub](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern) pattern with some C# help.
 
 ### Basic Example
-
-:point_right: Requires [ImsHealth.Patterns](https://imshealth.myget.org/feed/internal/package/nuget/ImsHealth.Patterns) nuget package
 
 #### Step 1: Define your event
 
@@ -265,20 +237,4 @@ public class TrackingEventHandlerFactory : IEventHandlerFactory
 // Register your factory
 var factory = new TrackingEventHandlerFactory();
 EventBus.Default.Register<UserAuthenticatedEvent>(trackingEventHandlerFactory);
-```
-
-#### Use `NinjectEventHandlerFactory` to provide handlers from your Ninject container
-
-If your application uses Ninject to manage Dependency Injection, you can leverage your Ninject bindings to provide your Handler instances and manage their lifetimes.
-
-:point_right: Requires [ImsHealth.Patterns.Ninject](https://imshealth.myget.org/feed/internal/package/nuget/ImsHealth.Patterns.Ninject) nuget package
-
-```csharp
-// Bind your handlers in your Kernel
-Kernel.Bind<IEventHandler<UserAuthenticatedEvent>>()
-    .To<TrackAuthenticatedUsersEventHandler>()
-    .InSingletonScope();
-
-// Register the NinjectEventHandlerFactory
-EventBus.Default.Register<ActivityTaskScheduledEvent>(new NinjectEventHandlerFactory(Kernel));
 ```
