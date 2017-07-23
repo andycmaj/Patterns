@@ -19,9 +19,14 @@ mono:
 
 dotnet: 1.0.4
 
+before_script:
+  - '[[ $TRAVIS_BRANCH == "master" && $TRAVIS_TAG =~ (^v[0-9]+.[0-9]+.[0-9]+) ]] && CONFIGURATION="Release" || CONFIGURATION="Debug"'
+
 script:
-  - ./build.sh -t Default -c Debug --verbosity diagnostic
-  - ./build.sh -t Publish -c Debug --verbosity diagnostic
+  - ./build.sh -t Default -c $CONFIGURATION --verbosity diagnostic
+
+after_success:
+  - ./build.sh -t Publish -c $CONFIGURATION --verbosity diagnostic
 
 cache:
   directories:
