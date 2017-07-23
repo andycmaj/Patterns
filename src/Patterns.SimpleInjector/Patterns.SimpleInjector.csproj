@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
@@ -6,6 +6,7 @@
     <AssemblyName>Patterns.SimpleInjector</AssemblyName>
     <PackageId>Patterns.SimpleInjector</PackageId>
     <Version>1.0.0</Version>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

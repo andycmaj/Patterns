@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard1.6</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -6,6 +6,7 @@
     <PackageId>Patterns</PackageId>
     <Version>1.0.0</Version>
     <CodeAnalysisRuleSet>../../StyleCop.Analyzers.ruleset</CodeAnalysisRuleSet>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <ItemGroup>
      <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta001">

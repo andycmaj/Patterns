@@ -1,3 +1,7 @@
+#tool coveralls.io
+#tool OpenCover
+#addin Cake.Coveralls
+
 //////////////////////////////////////////////////////////////////////
 // ARGUMENT DEFAULTS
 //////////////////////////////////////////////////////////////////////
@@ -9,6 +13,9 @@ var TestResultsPath =
         .Path
         .MakeAbsolute(Context.Environment);
 var XUnitArguments = Argument("xUnitArgs", "-parallel none -verbose -xml {0}");
+
+// TODO: update when we have multiple test projects
+var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml");
 
 //////////////////////////////////////////////////////////////////////
 // Helpers
@@ -55,16 +62,65 @@ Task("Build")
 Task("Test")
     .IsDependentOn("EnsureOutputPathExists")
     .IsDependentOn("Restore")
-    .Does(() =>
-{
-    ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
+    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
         DotNetCoreTool(
             projectFile,
             "xunit",
             string.Format(XUnitArguments, MakeTestResultFile(projectFile))
         )
-    );
-});
+    )
+);
+
+// UberHack: must use debugType:full on Windows only when running code-coverage.
+// TODO: unhack when https://github.com/OpenCover/opencover/issues/601 is resolved
+Task("ShimProjectDebugTypesForOpenCover")
+    .WithCriteria(() => IsRunningOnWindows())
+    .Does(() => ForEachProject("./src/*", (projectDir, projectFile) =>
+        XmlPoke(
+            projectFile,
+            "/Project/PropertyGroup/DebugType",
+            "full"
+        )
+    )
+);
+
+Task("MeasureCodeCoverage")
+    .WithCriteria(() => IsRunningOnWindows())
+    .IsDependentOn("EnsureOutputPathExists")
+    .IsDependentOn("ShimProjectDebugTypesForOpenCover")
+    .IsDependentOn("Restore")
+    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
+        OpenCover(
+            context => context.DotNetCoreTool(
+                projectFile,
+                "xunit"
+            ),
+            CoverageResultsPath,
+            new OpenCoverSettings {
+                // Must use projectDir as working dir or else dotnet-xunit doesn't work when driven by OpenCover cli
+                WorkingDirectory = projectDir,
+                Register = "user",
+                OldStyle = true
+            }
+                .WithFilter("+[Patterns]*")
+                .WithFilter("+[Patterns.SimpleInjector]*")
+                .WithFilter("-[Patterns.Tests]*")
+                .WithFilter("-[xunit*]*")
+        )
+    )
+);
+
+Task("UploadCodeCoverage")
+    .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
+    .IsDependentOn("MeasureCodeCoverage")
+    .Does(() => CoverallsIo(
+        CoverageResultsPath,
+        new CoverallsIoSettings
+        {
+            RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
+        }
+    )
+);
 
 //////////////////////////////////////////////////////////////////////
 // EXECUTION
@@ -73,8 +129,8 @@ Task("Test")
 Task("Default")
     .IsDependentOn("Test");
 
-// Task("BuildAndPublish")
-//     .IsDependentOn("Pack")
-//     .IsDependentOn("Publish");
+Task("Coverage")
+    .IsDependentOn("MeasureCodeCoverage")
+    .IsDependentOn("UploadCodeCoverage");
 
 RunTarget(DefaultTarget);
