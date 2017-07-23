@@ -5,13 +5,13 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6FB8AAED-ABA0-4FFC-B238-0B78AD3FBA0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Patterns", "src\Patterns\Patterns.csproj", "{027A0A4B-326E-48F4-B020-64E58E048867}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndyC.Patterns", "src\AndyC.Patterns\AndyC.Patterns.csproj", "{027A0A4B-326E-48F4-B020-64E58E048867}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Patterns.SimpleInjector", "src\Patterns.SimpleInjector\Patterns.SimpleInjector.csproj", "{8127C27F-67E5-4680-8CAE-66A49D9CB8FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndyC.Patterns.SimpleInjector", "src\AndyC.Patterns.SimpleInjector\AndyC.Patterns.SimpleInjector.csproj", "{8127C27F-67E5-4680-8CAE-66A49D9CB8FA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8FA9B31C-B38C-4EBA-B68D-55AE776AED38}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Patterns.Tests", "test\Patterns.Tests\Patterns.Tests.csproj", "{7151C40B-6131-4879-9DA3-F2EAAD262019}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndyC.Patterns.Tests", "test\AndyC.Patterns.Tests\AndyC.Patterns.Tests.csproj", "{7151C40B-6131-4879-9DA3-F2EAAD262019}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

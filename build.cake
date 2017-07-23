@@ -103,9 +103,9 @@ Task("MeasureCodeCoverage")
                 Register = "user",
                 OldStyle = true
             }
-                .WithFilter("+[Patterns]*")
-                .WithFilter("+[Patterns.SimpleInjector]*")
-                .WithFilter("-[Patterns.Tests]*")
+                .WithFilter("+[AndyC.Patterns]*")
+                .WithFilter("+[AndyC.Patterns.SimpleInjector]*")
+                .WithFilter("-[AndyC.Patterns.Tests]*")
                 .WithFilter("-[xunit*]*")
         )
     )
