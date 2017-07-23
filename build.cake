@@ -46,6 +46,8 @@ Func<FilePath, FilePath> MakeTestResultFile = (projectFile) =>
 
 Setup(context =>
 {
+    Information($"Branch: {EnvironmentVariable("TRAVIS_BRANCH")}");
+    Information($"Tag: {EnvironmentVariable("TRAVIS_TAG")}");
     Information($"Build configuration: {Configuration}");
 });
 
