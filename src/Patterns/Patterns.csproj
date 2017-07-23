@@ -3,8 +3,8 @@
     <TargetFrameworks>netstandard1.6</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Patterns</AssemblyName>
-    <PackageId>Patterns</PackageId>
-    <Version>1.0.0</Version>
+    <PackageId>AndyC.Patterns</PackageId>
+    <VersionPrefix>0.1.0</VersionPrefix>
     <CodeAnalysisRuleSet>../../StyleCop.Analyzers.ruleset</CodeAnalysisRuleSet>
     <DebugType>portable</DebugType>
   </PropertyGroup>
