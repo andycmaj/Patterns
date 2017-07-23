@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////
 
 var DefaultTarget = Argument("target", "Default");
+var Configuration = Argument("configuration", "Debug");
 var OutputPath = Argument("outputPath", ".artifacts");
 var TestResultsPath =
     Directory(Argument("testResultsPath", OutputPath))
@@ -43,6 +44,11 @@ Func<FilePath, FilePath> MakeTestResultFile = (projectFile) =>
 // Tasks
 //////////////////////////////////////////////////////////////////////
 
+Setup(context =>
+{
+    Information($"Build configuration: {Configuration}");
+});
+
 Task("EnsureOutputPathExists")
     .Does(() => EnsureDirectoryExists(OutputPath));
 
@@ -56,7 +62,7 @@ Task("Build")
     .IsDependentOn("Restore")
     .Does(() =>
 {
-    DotNetCoreBuild(".");
+    DotNetCoreBuild(".", new DotNetCoreBuildSettings { Configuration = Configuration });
 });
 
 Task("Test")
@@ -102,9 +108,9 @@ Task("MeasureCodeCoverage")
                 Register = "user",
                 OldStyle = true
             }
-                .WithFilter("+[Patterns]*")
-                .WithFilter("+[Patterns.SimpleInjector]*")
-                .WithFilter("-[Patterns.Tests]*")
+                .WithFilter("+[AndyC.Patterns]*")
+                .WithFilter("+[AndyC.Patterns.SimpleInjector]*")
+                .WithFilter("-[AndyC.Patterns.Tests]*")
                 .WithFilter("-[xunit*]*")
         )
     )
@@ -122,12 +128,54 @@ Task("UploadCodeCoverage")
     )
 );
 
+Task("Pack")
+    .Does(() => ForEachProject("./src/*", (projectDir, projectFile) => {
+        var settings = new DotNetCorePackSettings
+        {
+            Configuration = Configuration,
+            OutputDirectory = OutputPath
+        };
+
+        var isReleaseBuild = Configuration == "Release";
+        if (isReleaseBuild)
+        {
+            Information($"Release Build");
+        }
+        else
+        {
+            var buildNumber = $"t{DateTime.UtcNow.ToString("yyMMddHHmmss")}";
+
+            settings.VersionSuffix = buildNumber;
+            Information($"Prerelease Build Number: {buildNumber}");
+        }
+
+        DotNetCorePack(projectDir.FullPath, settings);
+    })
+);
+
+Task("Push")
+    .Does(() =>
+{
+    DotNetCoreNuGetPush(
+        OutputPath + "/*.nupkg",
+        new DotNetCoreNuGetPushSettings
+        {
+            Source = "https://www.nuget.org/api/v2/package",
+            ApiKey = EnvironmentVariable("NUGET_API_KEY")
+        }
+    );
+});
+
 //////////////////////////////////////////////////////////////////////
 // EXECUTION
 //////////////////////////////////////////////////////////////////////
 
 Task("Default")
     .IsDependentOn("Test");
+
+Task("Publish")
+    .IsDependentOn("Pack")
+    .IsDependentOn("Push");
 
 Task("Coverage")
     .IsDependentOn("MeasureCodeCoverage")

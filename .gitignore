@@ -40,4 +40,4 @@ Library/
 .tools/
 .artifacts/
 .nuget/
-.env.sh
+.env
