@@ -8,6 +8,3 @@ build_script:
 - ps: .\build.ps1 -t Coverage -v Diagnostic
 test: off
 deploy: off
-artifacts:
-- path: .\artifacts\*
-  name: Coverage
