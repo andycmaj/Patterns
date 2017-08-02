@@ -7,7 +7,7 @@ namespace AndyC.Patterns.SimpleInjector
     public abstract class AbstractConsoleApplicationContext : AbstractDispoable
     {
         private IDisposable scope;
-        private bool _disposed;
+        private bool disposed;
 
         public Container Container { get; private set; }
 
@@ -43,7 +43,7 @@ namespace AndyC.Patterns.SimpleInjector
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (!disposed)
             {
                 if (disposing)
                 {
@@ -58,7 +58,7 @@ namespace AndyC.Patterns.SimpleInjector
                 scope = null;
                 Container = null;
 
-                _disposed = true;
+                disposed = true;
             }
 
             base.Dispose(disposing);
