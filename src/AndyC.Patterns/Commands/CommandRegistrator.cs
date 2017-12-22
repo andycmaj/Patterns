@@ -33,16 +33,17 @@ namespace AndyC.Patterns.Commands
 
         private static IEnumerable<CommandHandlerRegistration> FindRegistrations(Assembly assembly)
         {
-            return assembly
-                .GetExportedTypes()
-                .Where(type => type.GetInterfaces().Any(IsCommandHandler))
-                .Where(type => !type.GetTypeInfo().IsAbstract)
-                .Select(type => new CommandHandlerRegistration
+            return 
+                from type in assembly.GetExportedTypes()
+                where type.GetInterfaces().Any(IsCommandHandler) && !type.GetTypeInfo().IsAbstract
+                let commandInterface = type.GetInterfaces().Single(IsCommandHandler)
+                let registrationInterface = commandInterface.GetTypeInfo().ContainsGenericParameters ? commandInterface.GetGenericTypeDefinition() : commandInterface
+                select new CommandHandlerRegistration
                 {
-                    Interface = type.GetInterfaces().Single(IsCommandHandler),
+                    Interface = registrationInterface,
                     Implementation = type,
                     IsDecorator = type.GetTypeInfo().GetCustomAttribute<CommandDecorator>() != null
-                });
+                };
         }
 
         private static bool IsCommandHandler(Type interfaceType)
