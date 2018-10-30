@@ -14,19 +14,18 @@ addons:
     - libssl-dev
     - libunwind8
 
-mono:
-  - 4.4.2
-
-dotnet: 1.0.4
+mono: none
+dotnet: 2.1.403
 
 before_script:
   - '[[ $TRAVIS_TAG =~ (^v[0-9]+.[0-9]+.[0-9]+) ]] && CONFIGURATION="Release" || CONFIGURATION="Debug"'
+  - dotnet tool install -g Cake.Tool --version 0.30.0
 
 script:
-  - ./build.sh -t Default -c $CONFIGURATION --verbosity diagnostic
+  - dotnet cake --target Default --configuration $CONFIGURATION --verbosity diagnostic
 
 after_success:
-  - ./build.sh -t Publish -c $CONFIGURATION --verbosity diagnostic
+  - dotnet cake --target Publish --configuration $CONFIGURATION --verbosity diagnostic
 
 cache:
   directories:
