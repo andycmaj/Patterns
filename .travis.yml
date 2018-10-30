@@ -21,13 +21,12 @@ before_script:
   - '[[ $TRAVIS_TAG =~ (^v[0-9]+.[0-9]+.[0-9]+) ]] && CONFIGURATION="Release" || CONFIGURATION="Debug"'
   - dotnet tool install -g Cake.Tool --version 0.30.0
   - export PATH="$PATH:~/.dotnet/tools"
-  - ls -la ~/.dotnet/tools
 
 script:
-  - dotnet cake --target Default --configuration $CONFIGURATION --verbosity diagnostic
+  - dotnet cake --target=Default --configuration=$CONFIGURATION --verbosity=diagnostic
 
 after_success:
-  - dotnet cake --target Publish --configuration $CONFIGURATION --verbosity diagnostic
+  - dotnet cake --target=Publish --configuration=$CONFIGURATION --verbosity=diagnostic
 
 cache:
   directories:
