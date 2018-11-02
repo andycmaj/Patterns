@@ -2,6 +2,8 @@
 #tool OpenCover
 #addin Cake.Coveralls
 
+#tool "nuget:?package=ReportGenerator&version=4.0.2"
+
 //////////////////////////////////////////////////////////////////////
 // ARGUMENT DEFAULTS
 //////////////////////////////////////////////////////////////////////
@@ -17,6 +19,9 @@ var XUnitArguments = Argument("xUnitArgs", "-parallel none -verbose -xml {0}");
 
 // TODO: update when we have multiple test projects
 var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml");
+// Unit Tests
+var CSharpCoverageThreshold = Argument("coveragePercentThreshold", 5);
+var CSharpCoverageExcludePatterns = new List<string>();
 
 //////////////////////////////////////////////////////////////////////
 // Helpers
@@ -49,6 +54,9 @@ Setup(context =>
     Information($"Branch: {EnvironmentVariable("TRAVIS_BRANCH")}");
     Information($"Tag: {EnvironmentVariable("TRAVIS_TAG")}");
     Information($"Build configuration: {Configuration}");
+
+        CSharpCoverageThreshold = 0;
+    // CSharpCoverageExcludePatterns.Add("**/*.Designer.cs");
 });
 
 Task("EnsureOutputPathExists")
@@ -67,56 +75,73 @@ Task("Build")
     DotNetCoreBuild(".", new DotNetCoreBuildSettings { Configuration = Configuration });
 });
 
-Task("Test")
-    .IsDependentOn("EnsureOutputPathExists")
-    .IsDependentOn("Restore")
-    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
-        DotNetCoreTool(
-            projectFile,
-            "xunit",
-            string.Format(XUnitArguments, MakeTestResultFile(projectFile))
-        )
-    )
-);
+Task("DotNetTestWithCodeCoverage")
+    .IsDependentOn("Build")
+    .Does(() =>
+{
+    RunCoverlet(
+        Configuration,
+        CSharpCoverageThreshold,
+        CSharpCoverageExcludePatterns.ToArray()
+    );
+});
 
-// UberHack: must use debugType:full on Windows only when running code-coverage.
-// TODO: unhack when https://github.com/OpenCover/opencover/issues/601 is resolved
-Task("ShimProjectDebugTypesForOpenCover")
-    .WithCriteria(() => IsRunningOnWindows())
-    .Does(() => ForEachProject("./src/*", (projectDir, projectFile) =>
-        XmlPoke(
-            projectFile,
-            "/Project/PropertyGroup/DebugType",
-            "full"
-        )
-    )
-);
+public void RunCoverlet(
+    string configuration,
+    int coverageThreshold = 0,
+    params string[] excludePatterns
+)
+{
+    // TODO: https://github.com/Romanx/Cake.Coverlet
 
-Task("MeasureCodeCoverage")
-    .WithCriteria(() => IsRunningOnWindows())
-    .IsDependentOn("EnsureOutputPathExists")
-    .IsDependentOn("ShimProjectDebugTypesForOpenCover")
-    .IsDependentOn("Restore")
-    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
-        OpenCover(
-            context => context.DotNetCoreTool(
-                projectFile,
-                "xunit"
-            ),
-            CoverageResultsPath,
-            new OpenCoverSettings {
-                // Must use projectDir as working dir or else dotnet-xunit doesn't work when driven by OpenCover cli
-                WorkingDirectory = projectDir,
-                Register = "user",
-                OldStyle = true
-            }
-                .WithFilter("+[AndyC.Patterns]*")
-                .WithFilter("+[AndyC.Patterns.SimpleInjector]*")
-                .WithFilter("-[AndyC.Patterns.Tests]*")
-                .WithFilter("-[xunit*]*")
-        )
-    )
-);
+    if (excludePatterns.Any())
+    {
+        msBuildSettings.WithProperty("Exclude", $"\"{string.Join(",", excludePatterns)}\"");
+    }
+
+    var testSettings = new DotNetCoreTestSettings
+    {
+        ArgumentCustomization = args => {
+            args.AppendMSBuildSettings(msBuildSettings, Context.Environment);
+            return args;
+        },
+        Configuration = configuration,
+        NoBuild = true,
+    };
+
+    var argBuilder = new ProcessArgumentBuilder();
+    var hasCoverage = false;
+    var projectFiles = GetFiles("./test/**/*.csproj");
+    foreach (var projectFile in projectFiles)
+    {
+        var projectDir = projectFile.GetDirectory();
+        Information($"Using {projectDir}, {projectFile}...");
+
+        var msBuildSettings = new DotNetCoreMSBuildSettings()
+            .WithProperty("CollectCoverage", "true")
+            .WithProperty("Threshold", coverageThreshold.ToString())
+            .WithProperty("ThresholdType", "line")
+            .WithProperty("CoverletOutputFormat", "opencover");
+            // .WithProperty("MergeWith", "");
+
+        DotNetCoreTest(projectFile.FullPath, testSettings);
+
+        hasCoverage = true;
+
+        var coverageFile = File($"{projectDir}/coverage.opencover.xml");
+        argBuilder.AppendSwitchQuoted("-reports", ":", coverageFile);
+    }
+    argBuilder.AppendSwitchQuoted("-targetdir", ":", "./.artifacts");
+
+    if (hasCoverage)
+    {
+        DotNetCoreExecute("./.tools/ReportGenerator.4.0.0-rc3/tools/netcoreapp2.0/ReportGenerator.dll", argBuilder);
+    }
+    else
+    {
+        Information("no test coverage found");
+    }
+}
 
 Task("UploadCodeCoverage")
     .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
@@ -173,14 +198,13 @@ Task("Push")
 //////////////////////////////////////////////////////////////////////
 
 Task("Default")
-    .IsDependentOn("Test");
+    .IsDependentOn("DotNetTestWithCodeCoverage");
 
 Task("Publish")
     .IsDependentOn("Pack")
     .IsDependentOn("Push");
 
 Task("Coverage")
-    .IsDependentOn("MeasureCodeCoverage")
     .IsDependentOn("UploadCodeCoverage");
 
 RunTarget(DefaultTarget);
