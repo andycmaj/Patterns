@@ -2,6 +2,8 @@
 #tool OpenCover
 #addin Cake.Coveralls
 
+#tool "nuget:?package=ReportGenerator&version=4.0.2"
+
 //////////////////////////////////////////////////////////////////////
 // ARGUMENT DEFAULTS
 //////////////////////////////////////////////////////////////////////
@@ -17,6 +19,9 @@ var XUnitArguments = Argument("xUnitArgs", "-parallel none -verbose -xml {0}");
 
 // TODO: update when we have multiple test projects
 var CoverageResultsPath = Directory(OutputPath) + File("coverage.xml");
+// Unit Tests
+var CSharpCoverageThreshold = Argument("coveragePercentThreshold", 5);
+var CSharpCoverageExcludePatterns = new List<string>();
 
 //////////////////////////////////////////////////////////////////////
 // Helpers
@@ -49,6 +54,9 @@ Setup(context =>
     Information($"Branch: {EnvironmentVariable("TRAVIS_BRANCH")}");
     Information($"Tag: {EnvironmentVariable("TRAVIS_TAG")}");
     Information($"Build configuration: {Configuration}");
+
+        CSharpCoverageThreshold = 0;
+    // CSharpCoverageExcludePatterns.Add("**/*.Designer.cs");
 });
 
 Task("EnsureOutputPathExists")
@@ -61,74 +69,66 @@ Task("Restore")
 });
 
 Task("Build")
-    .IsDependentOn("Restore")
     .Does(() =>
 {
     DotNetCoreBuild(".", new DotNetCoreBuildSettings { Configuration = Configuration });
 });
 
-Task("Test")
-    .IsDependentOn("EnsureOutputPathExists")
-    .IsDependentOn("Restore")
-    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
-        DotNetCoreTool(
-            projectFile,
-            "xunit",
-            string.Format(XUnitArguments, MakeTestResultFile(projectFile))
-        )
-    )
-);
+Task("DotNetTestWithCodeCoverage")
+    .IsDependentOn("Build")
+    .Does(() =>
+{
+    RunMiniCover(
+        Configuration,
+        CSharpCoverageThreshold,
+        CSharpCoverageExcludePatterns.ToArray()
+    );
+});
 
-// UberHack: must use debugType:full on Windows only when running code-coverage.
-// TODO: unhack when https://github.com/OpenCover/opencover/issues/601 is resolved
-Task("ShimProjectDebugTypesForOpenCover")
-    .WithCriteria(() => IsRunningOnWindows())
-    .Does(() => ForEachProject("./src/*", (projectDir, projectFile) =>
-        XmlPoke(
-            projectFile,
-            "/Project/PropertyGroup/DebugType",
-            "full"
-        )
-    )
-);
+public void RunMiniCover(
+    string configuration,
+    int coverageThreshold = 0,
+    string[] extraSourceDirs = null,
+    string[] excludePatterns = null,
+    string[] excludeCategories = null
+)
+{
+    var excludeParams = string.Join(" ", (excludePatterns ?? new string[0]).Select(pattern => $"--exclude-sources {pattern}"));
+    var extraSourcesParams = string.Join(" ", (extraSourceDirs ?? new string[0]).Select(pattern => $"--sources {pattern}"));
+    DotNetCoreTool(
+        "./tools/tools.csproj",
+        "minicover",
+        $"instrument --workdir ../ --assemblies test/**/bin/**/*.dll --sources src/**/*.cs {extraSourcesParams} {excludeParams}"
+    );
+    DotNetCoreTool("./tools/tools.csproj", "minicover", "reset");
 
-Task("MeasureCodeCoverage")
-    .WithCriteria(() => IsRunningOnWindows())
-    .IsDependentOn("EnsureOutputPathExists")
-    .IsDependentOn("ShimProjectDebugTypesForOpenCover")
-    .IsDependentOn("Restore")
-    .Does(() => ForEachProject("./test/*.Tests", (projectDir, projectFile) =>
-        OpenCover(
-            context => context.DotNetCoreTool(
-                projectFile,
-                "xunit"
-            ),
-            CoverageResultsPath,
-            new OpenCoverSettings {
-                // Must use projectDir as working dir or else dotnet-xunit doesn't work when driven by OpenCover cli
-                WorkingDirectory = projectDir,
-                Register = "user",
-                OldStyle = true
-            }
-                .WithFilter("+[AndyC.Patterns]*")
-                .WithFilter("+[AndyC.Patterns.SimpleInjector]*")
-                .WithFilter("-[AndyC.Patterns.Tests]*")
-                .WithFilter("-[xunit*]*")
-        )
-    )
-);
+    var argumentCustomization = string.Join(" ", (excludeCategories ?? new string[0]).Select(category => $"--filter Category!={category}"));
+    var testSettings = new DotNetCoreTestSettings
+    {
+        ArgumentCustomization = args => args.Append(argumentCustomization),
+        Configuration = configuration,
+        NoBuild = true,
+    };
+    ForEachProject("./test/**", (projectDir, projectFile) => {
+        DotNetCoreTest(projectFile.FullPath, testSettings);
+    });
 
-Task("UploadCodeCoverage")
-    .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
-    .IsDependentOn("MeasureCodeCoverage")
-    .Does(() => CoverallsIo(
-        CoverageResultsPath,
-        new CoverallsIoSettings
-        {
-            RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
-        }
-    )
-);
+    DotNetCoreTool("./tools/tools.csproj", "minicover", "uninstrument --workdir  ../");
+    DotNetCoreTool("./tools/tools.csproj", "minicover", $"htmlreport --output {OutputPath} --workdir ../ --threshold {coverageThreshold}");
+    DotNetCoreTool("./tools/tools.csproj", "minicover", $"report --workdir ../ --threshold {coverageThreshold}");
+}
+
+// Task("UploadCodeCoverage")
+//     .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
+//     .IsDependentOn("MeasureCodeCoverage")
+//     .Does(() => CoverallsIo(
+//         CoverageResultsPath,
+//         new CoverallsIoSettings
+//         {
+//             RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
+//         }
+//     )
+// );
 
 Task("Pack")
     .Does(() => ForEachProject("./src/*", (projectDir, projectFile) => {
@@ -173,14 +173,13 @@ Task("Push")
 //////////////////////////////////////////////////////////////////////
 
 Task("Default")
-    .IsDependentOn("Test");
+    .IsDependentOn("DotNetTestWithCodeCoverage");
 
 Task("Publish")
     .IsDependentOn("Pack")
     .IsDependentOn("Push");
 
-Task("Coverage")
-    .IsDependentOn("MeasureCodeCoverage")
-    .IsDependentOn("UploadCodeCoverage");
+// Task("Coverage")
+//     .IsDependentOn("UploadCodeCoverage");
 
 RunTarget(DefaultTarget);
