@@ -69,7 +69,6 @@ Task("Restore")
 });
 
 Task("Build")
-    .IsDependentOn("Restore")
     .Does(() =>
 {
     DotNetCoreBuild(".", new DotNetCoreBuildSettings { Configuration = Configuration });
@@ -79,81 +78,57 @@ Task("DotNetTestWithCodeCoverage")
     .IsDependentOn("Build")
     .Does(() =>
 {
-    RunCoverlet(
+    RunMiniCover(
         Configuration,
         CSharpCoverageThreshold,
         CSharpCoverageExcludePatterns.ToArray()
     );
 });
 
-public void RunCoverlet(
+public void RunMiniCover(
     string configuration,
     int coverageThreshold = 0,
-    params string[] excludePatterns
+    string[] extraSourceDirs = null,
+    string[] excludePatterns = null,
+    string[] excludeCategories = null
 )
 {
-    // TODO: https://github.com/Romanx/Cake.Coverlet
+    var excludeParams = string.Join(" ", (excludePatterns ?? new string[0]).Select(pattern => $"--exclude-sources {pattern}"));
+    var extraSourcesParams = string.Join(" ", (extraSourceDirs ?? new string[0]).Select(pattern => $"--sources {pattern}"));
+    DotNetCoreTool(
+        "./tools/tools.csproj",
+        "minicover",
+        $"instrument --workdir ../ --assemblies test/**/bin/**/*.dll --sources src/**/*.cs {extraSourcesParams} {excludeParams}"
+    );
+    DotNetCoreTool("./tools/tools.csproj", "minicover", "reset");
 
-    if (excludePatterns.Any())
-    {
-        msBuildSettings.WithProperty("Exclude", $"\"{string.Join(",", excludePatterns)}\"");
-    }
-
+    var argumentCustomization = string.Join(" ", (excludeCategories ?? new string[0]).Select(category => $"--filter Category!={category}"));
     var testSettings = new DotNetCoreTestSettings
     {
-        ArgumentCustomization = args => {
-            args.AppendMSBuildSettings(msBuildSettings, Context.Environment);
-            return args;
-        },
+        ArgumentCustomization = args => args.Append(argumentCustomization),
         Configuration = configuration,
         NoBuild = true,
     };
-
-    var argBuilder = new ProcessArgumentBuilder();
-    var hasCoverage = false;
-    var projectFiles = GetFiles("./test/**/*.csproj");
-    foreach (var projectFile in projectFiles)
-    {
-        var projectDir = projectFile.GetDirectory();
-        Information($"Using {projectDir}, {projectFile}...");
-
-        var msBuildSettings = new DotNetCoreMSBuildSettings()
-            .WithProperty("CollectCoverage", "true")
-            .WithProperty("Threshold", coverageThreshold.ToString())
-            .WithProperty("ThresholdType", "line")
-            .WithProperty("CoverletOutputFormat", "opencover");
-            // .WithProperty("MergeWith", "");
-
+    ForEachProject("./test/**", (projectDir, projectFile) => {
         DotNetCoreTest(projectFile.FullPath, testSettings);
+    });
 
-        hasCoverage = true;
-
-        var coverageFile = File($"{projectDir}/coverage.opencover.xml");
-        argBuilder.AppendSwitchQuoted("-reports", ":", coverageFile);
-    }
-    argBuilder.AppendSwitchQuoted("-targetdir", ":", "./.artifacts");
-
-    if (hasCoverage)
-    {
-        DotNetCoreExecute("./.tools/ReportGenerator.4.0.0-rc3/tools/netcoreapp2.0/ReportGenerator.dll", argBuilder);
-    }
-    else
-    {
-        Information("no test coverage found");
-    }
+    DotNetCoreTool("./tools/tools.csproj", "minicover", "uninstrument --workdir  ../");
+    DotNetCoreTool("./tools/tools.csproj", "minicover", $"htmlreport --output {OutputPath} --workdir ../ --threshold {coverageThreshold}");
+    DotNetCoreTool("./tools/tools.csproj", "minicover", $"report --workdir ../ --threshold {coverageThreshold}");
 }
 
-Task("UploadCodeCoverage")
-    .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
-    .IsDependentOn("MeasureCodeCoverage")
-    .Does(() => CoverallsIo(
-        CoverageResultsPath,
-        new CoverallsIoSettings
-        {
-            RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
-        }
-    )
-);
+// Task("UploadCodeCoverage")
+//     .WithCriteria(() => IsRunningOnWindows() && FileExists(CoverageResultsPath))
+//     .IsDependentOn("MeasureCodeCoverage")
+//     .Does(() => CoverallsIo(
+//         CoverageResultsPath,
+//         new CoverallsIoSettings
+//         {
+//             RepoToken = EnvironmentVariable("COVERALLS_REPO_TOKEN")
+//         }
+//     )
+// );
 
 Task("Pack")
     .Does(() => ForEachProject("./src/*", (projectDir, projectFile) => {
@@ -204,7 +179,7 @@ Task("Publish")
     .IsDependentOn("Pack")
     .IsDependentOn("Push");
 
-Task("Coverage")
-    .IsDependentOn("UploadCodeCoverage");
+// Task("Coverage")
+//     .IsDependentOn("UploadCodeCoverage");
 
 RunTarget(DefaultTarget);
